@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "electric-flock"
+version = "0.1.0"
+description = ""
+authors = ["Jamie Bliss <jamie@ivyleav.es>"]
+readme = "README.md"
+packages = [{include = "electric_flock"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+flask = "^2.3.2"
+
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.4.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
