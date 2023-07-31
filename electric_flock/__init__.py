@@ -93,7 +93,7 @@ def get_next_chunk():
     session['seq'] = next_seq
     return (f"""#EXTM3U
 #EXT-X-TARGETDURATION:{next_sheep.length}
-#EXT-X-VERSION:4
+#EXT-X-VERSION:7
 #EXT-X-MEDIA-SEQUENCE:{next_seq}
 #EXTINF:{next_sheep.length},
 {url_for('static', filename=next_sheep.path.name)}
