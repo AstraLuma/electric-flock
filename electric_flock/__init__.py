@@ -48,8 +48,26 @@ app.secret_key = 'sekrit',
 @app.route('/')
 def index():
     return (
-        f"<p>Have found {len(all_sheep)} sheep</p>"
-        '<video src="/stream.m3u8" controls autoplay></video>'
+        """
+<!DOCTYPE html>
+<video id=player controls autoplay></video>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+<script>
+  var video = document.getElementById('player');
+  var videoSrc = '/stream.m3u8';
+  if (Hls.isSupported()) {
+    var hls = new Hls({debug:true});
+    hls.loadSource(videoSrc);
+    hls.attachMedia(video);
+  }
+  else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = videoSrc;
+  }
+  else {
+    console.log("HLS failed");
+  }
+</script>
+"""
     )
 
 
