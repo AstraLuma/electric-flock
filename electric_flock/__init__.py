@@ -24,7 +24,7 @@ SHEEP_ROOT = Path.cwd() / 'segments'
 
 all_sheep = [
     Sheep(p, *map(int, p.stem.split('=')))
-    for p in Path(SHEEP_ROOT).glob('*.ts')
+    for p in Path(SHEEP_ROOT).glob('*.mp4')
 ]
 
 next_sheep_index = {
@@ -35,7 +35,7 @@ for s in all_sheep:
     if s.start in next_sheep_index:
         next_sheep_index[s.start].append(s)
 
-mimetypes.add_type('video/MP2T', '.ts')
+mimetypes.add_type('video/mp4', '.mp4')
 
 app = Flask(
     __name__,
