@@ -7,5 +7,5 @@ RUN POETRY_VIRTUALENVS_CREATE=false poetry install --with=deploy
 ENV PORT=80
 
 VOLUME ["/app/segments"]
-EXPOSE 8000/tcp
+EXPOSE 80/tcp
 CMD ["gunicorn", "electric_flock:app"]
