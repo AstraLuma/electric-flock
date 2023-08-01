@@ -1,5 +1,5 @@
 #EXTM3U
-#EXT-X-TARGETDURATION:{{flock|max(attribute='length')}}
+#EXT-X-TARGETDURATION:{{flock|max(attribute='length')|attr('length')}}
 #EXT-X-VERSION:7
 #EXT-X-MEDIA-SEQUENCE:{{first_seq}}
 #EXT-X-DISCONTINUITY-SEQUENCE:{{first_seq}}
