@@ -4,4 +4,8 @@ help:
 
 # Run a development server
 serve:
-  poetry run flask --app electric_flock:app run --debug
+  poetry run flask run --debug
+
+# Run other flask commands
+flask +ARGS:
+  poetry run flask {{ARGS}}
