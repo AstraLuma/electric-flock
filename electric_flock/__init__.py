@@ -93,28 +93,7 @@ threading.Thread(target=flock_walker, name='flock_walker', daemon=True).start()
 
 @app.route('/')
 def index():
-    return (
-        """
-<!DOCTYPE html>
-<video id=player controls autoplay></video>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
-<script>
-  var video = document.getElementById('player');
-  var videoSrc = '/stream.m3u8';
-  if (Hls.isSupported()) {
-    var hls = new Hls({debug:true});
-    hls.loadSource(videoSrc);
-    hls.attachMedia(video);
-  }
-  else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-    video.src = videoSrc;
-  }
-  else {
-    console.log("HLS failed");
-  }
-</script>
-"""
-    )
+    return render_template('index.html')
 
 
 @app.route("/stream.m3u8")

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Eelectric Sheep</title>
+    <style>
+      body {
+        margin: 0;
+        background: black;
+      }
+      #player {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
+      #logo {
+        display: block;
+        position: fixed;
+        right: 1em;
+        bottom: 1em;
+      }
+    </style>
+  </head>
+  <body>
+    <video id="player" autoplay></video>
+    <a href="https://electricsheep.org/" id="logo">
+      <img
+        src="data:image/png;base64,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"
+      />
+    </a>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+    <script>
+      var video = document.getElementById("player");
+      var videoSrc = "/stream.m3u8";
+      if (Hls.isSupported()) {
+        var hls = new Hls({ debug: true });
+        hls.loadSource(videoSrc);
+        hls.attachMedia(video);
+      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        video.src = videoSrc;
+      } else {
+        console.log("HLS failed");
+      }
+    </script>
+  </body>
+</html>
