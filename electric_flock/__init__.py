@@ -78,7 +78,7 @@ def flock_traversal() -> Iterable[Sheep]:
         return random.random() < chance
 
     CHANCE_OF_JUMP = 0.05  # Chance of breaking the chain
-    CHANCE_OF_LOOP = 0.75  # Chance of looping, if there's a loop option
+    CHANCE_OF_LOOP = 0.90  # Chance of looping, if there's a loop option
     sheep = random.choice(all_sheep)
     yield sheep
     while True:
@@ -98,7 +98,8 @@ def flock_traversal() -> Iterable[Sheep]:
                 sheep = random.choice(next_sheep_index[sheep.ident])
         else:
             # Dead end, start over
-            sheep = random.choice(all_sheep)
+            # Only jump to a loop, not a transitory
+            sheep = random.choice([s for s in all_sheep if s.start == s.end])
         yield sheep
 
 
