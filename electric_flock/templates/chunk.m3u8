@@ -1,0 +1,8 @@
+#EXTM3U
+#EXT-X-TARGETDURATION:{{flock|max(attribute='length')}}
+#EXT-X-VERSION:7
+#EXT-X-MEDIA-SEQUENCE:{{first_seq}}
+{%- for sheep in flock %}
+#EXTINF:{{sheep.length}},
+{{url_for('static', filename=sheep.path.name)}}
+{%- endfor %}

@@ -1,9 +1,12 @@
+from collections.abc import Iterable
 from dataclasses import dataclass
 import mimetypes
 import random
 from pathlib import Path
+import time
+import threading
 
-from flask import Flask, session, url_for
+from flask import Flask, session, render_template
 
 
 @dataclass
@@ -22,9 +25,21 @@ class Sheep:
 # SHEEP_ROOT = '/tmp/sheep'
 SHEEP_ROOT = Path.cwd() / 'segments'
 
+mimetypes.add_type('video/mp4', '.mp4')
+
+app = Flask(
+    __name__,
+    static_folder=SHEEP_ROOT,
+    static_url_path='/sheep',
+)
+app.config.from_mapping(
+    SECRET_KEY="sekrit",
+)
+app.config.from_prefixed_env()
+
 all_sheep = [
     Sheep(p, *map(int, p.stem.split('=')))
-    for p in Path(SHEEP_ROOT).glob('*.mp4')
+    for p in Path(app.static_folder).glob('*.mp4')
 ]
 
 next_sheep_index = {
@@ -35,14 +50,45 @@ for s in all_sheep:
     if s.start in next_sheep_index:
         next_sheep_index[s.start].append(s)
 
-mimetypes.add_type('video/mp4', '.mp4')
 
-app = Flask(
-    __name__,
-    static_folder=SHEEP_ROOT,
-    static_url_path='/sheep',
-)
-app.secret_key = 'sekrit',
+def flock_traversal() -> Iterable[Sheep]:
+    """
+    Random walks the sheep graph.
+
+    Each loop is one step.
+    """
+    sheep = random.choice(all_sheep)
+    yield sheep
+    while True:
+        if sheep.ident not in next_sheep_index:
+            # Shouldn't happen
+            sheep = random.choice(all_sheep)
+        elif next_sheep_index[sheep.ident]:
+            # Pick a next item
+            # TODO: Preference looping
+            sheep = random.choice(next_sheep_index[sheep.ident])
+        else:
+            # Dead end, start over
+            sheep = random.choice(all_sheep)
+        yield sheep
+
+
+sheep_list = []
+
+
+def flock_walker():
+    """
+    Thread to walk the graph in a timely fasion.
+    """
+    global sheep_list
+    for seq, sheep in enumerate(flock_traversal()):
+        sheep_list.append((seq, sheep))
+        if len(sheep_list) > 10:
+            sheep_list.pop(0)
+        time.sleep(sheep.length)
+
+
+threading.Thread(target=flock_walker, name='flock_walker', daemon=True).start()
 
 
 @app.route('/')
@@ -73,28 +119,10 @@ def index():
 
 @app.route("/stream.m3u8")
 def get_next_chunk():
-    if 'sheep' not in session or 'seq' not in session:
-        # New one
-        next_sheep = random.choice(all_sheep)
-        next_seq = 1
-    else:
-        # Next in sequence
-        if session['sheep'] not in next_sheep_index:
-            next_sheep = random.choice(all_sheep)
-        elif next_sheep_index[session['sheep']]:
-            next_sheep = random.choice(next_sheep_index[session['sheep']])
-        else:
-            next_sheep = random.choice(all_sheep)
-        next_seq = session['seq'] + 1
-
-    print(next_seq, next_sheep)
-
-    session['sheep'] = next_sheep.ident
-    session['seq'] = next_seq
-    return (f"""#EXTM3U
-#EXT-X-TARGETDURATION:{next_sheep.length}
-#EXT-X-VERSION:7
-#EXT-X-MEDIA-SEQUENCE:{next_seq}
-#EXTINF:{next_sheep.length},
-{url_for('static', filename=next_sheep.path.name)}
-""", {'Content-Type': 'application/vnd.apple.mpegurl'})
+    return (
+        render_template('chunk.m3u8',
+                        flock=[s for _, s in sheep_list],
+                        first_seq=min(i for i, _ in sheep_list)
+                        ),
+        {'Content-Type': 'application/vnd.apple.mpegurl'},
+    )
