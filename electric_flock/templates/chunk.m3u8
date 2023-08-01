@@ -2,7 +2,9 @@
 #EXT-X-TARGETDURATION:{{flock|max(attribute='length')}}
 #EXT-X-VERSION:7
 #EXT-X-MEDIA-SEQUENCE:{{first_seq}}
+#EXT-X-DISCONTINUITY-SEQUENCE:{{first_seq}}
 {%- for sheep in flock %}
+#EXT-X-DISCONTINUITY
 #EXTINF:{{sheep.length}},
 {{url_for('static', filename=sheep.path.name)}}
 {%- endfor %}
