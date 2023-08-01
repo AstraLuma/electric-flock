@@ -37,18 +37,29 @@ app.config.from_mapping(
 )
 app.config.from_prefixed_env()
 
-all_sheep = [
-    Sheep(p, *map(int, p.stem.split('=')))
-    for p in Path(app.static_folder).glob('*.mp4')
-]
+all_sheep: list[Sheep]
+next_sheep_index: dict[int, list[Sheep]]
 
-next_sheep_index = {
-    s.ident: []
-    for s in all_sheep
-}
-for s in all_sheep:
-    if s.start in next_sheep_index:
-        next_sheep_index[s.start].append(s)
+
+def load_sheep():
+    global all_sheep, next_sheep_index
+    all_sheep = [
+        Sheep(p, *map(int, p.stem.split('=')))
+        for p in Path(app.static_folder).glob('*.mp4')
+    ]
+
+    next_sheep_index = {
+        s.ident: []
+        for s in all_sheep
+    }
+    # Technically, there's a race condition here, but if it gets hit,
+    # it'll just cause a chain break
+    for s in all_sheep:
+        if s.start in next_sheep_index:
+            next_sheep_index[s.start].append(s)
+
+
+load_sheep()
 
 
 def flock_traversal() -> Iterable[Sheep]:
@@ -57,6 +68,17 @@ def flock_traversal() -> Iterable[Sheep]:
 
     Each loop is one step.
     """
+    global all_sheep, next_sheep_index
+
+    def should_i(chance: float) -> bool:
+        """
+        Randomly decides if an action should be taken, based on the given
+        probability.
+        """
+        return random.random() < chance
+
+    CHANCE_OF_JUMP = 0.05  # Chance of breaking the chain
+    CHANCE_OF_LOOP = 0.75  # Chance of looping, if there's a loop option
     sheep = random.choice(all_sheep)
     yield sheep
     while True:
@@ -65,15 +87,22 @@ def flock_traversal() -> Iterable[Sheep]:
             sheep = random.choice(all_sheep)
         elif next_sheep_index[sheep.ident]:
             # Pick a next item
-            # TODO: Preference looping
-            sheep = random.choice(next_sheep_index[sheep.ident])
+            nexts = next_sheep_index[sheep.ident]
+            if should_i(CHANCE_OF_JUMP):
+                # Ignore the chain and pick something new at random
+                sheep = random.choice(all_sheep)
+            elif sheep in nexts and should_i(CHANCE_OF_LOOP):
+                # Just keep looping
+                pass
+            else:
+                sheep = random.choice(next_sheep_index[sheep.ident])
         else:
             # Dead end, start over
             sheep = random.choice(all_sheep)
         yield sheep
 
 
-sheep_list = []
+sheep_list: list[tuple[int, Sheep]] = []
 
 
 def flock_walker():
@@ -85,6 +114,10 @@ def flock_walker():
         sheep_list.append((seq, sheep))
         if len(sheep_list) > 10:
             sheep_list.pop(0)
+        if seq % 100 == 0:
+            # Trigger sheep reload
+            threading.Thread(target=load_sheep,
+                             name="load_sheep", daemon=True).start()
         time.sleep(sheep.length)
 
 
