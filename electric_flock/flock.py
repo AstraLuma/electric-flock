@@ -39,6 +39,8 @@ class Flock(MutableSet[Sheep]):
     """
     A collection of sheep, with a bunch of handy lookups
     """
+    # Remember that Sheep start/end might not refer to realized sheep,
+    # and that's fine since it can still form a valid chain.
     _sheep: set[Sheep]
     _idents: dict[tuple[int, int], Sheep]
     _nexts: dict[tuple[int, int], set[Sheep]]
@@ -95,5 +97,5 @@ class Flock(MutableSet[Sheep]):
         Given a sheep, find the sheep that can follow it.
         """
         if isinstance(item, Sheep):
-            item = item.gen, item.ident
+            item = item.gen, item.end
         yield from self._nexts[item]
