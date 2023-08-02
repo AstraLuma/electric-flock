@@ -62,17 +62,19 @@ def flock_traversal() -> Iterator[Sheep]:
     sheep = rand.choice([*flock])
     yield sheep
     while True:
-        nexts = [*flock.find_next_sheep(sheep)]
-        if nexts:
-            # Pick a next item
-            if should_i(CHANCE_OF_JUMP):
-                # Ignore the chain and pick something new at random
-                sheep = rand.choice([*flock.iter_loops()])
-            elif sheep in nexts and should_i(CHANCE_OF_LOOP):
-                # Just keep looping
-                pass
-            else:
-                sheep = rand.choice(nexts)
+        nexts = {*flock.find_next_sheep(sheep)}
+        loops = [s for s in nexts if s.is_loop]
+        outs = [s for s in nexts if not s.is_loop]
+        # Pick a next item
+        if should_i(CHANCE_OF_JUMP):
+            # Ignore the chain and pick something new at random
+            sheep = rand.choice([*flock.iter_loops()])
+        elif loops and should_i(CHANCE_OF_LOOP):
+            # Just keep looping
+            sheep = rand.choice(loops)
+        elif outs:
+            # Transition to another
+            sheep = rand.choice(outs)
         else:
             # Dead end, start over
             # Only jump to a loop, not a transitory
