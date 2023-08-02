@@ -48,16 +48,18 @@ def flock_traversal() -> Iterator[Sheep]:
     """
     global flock
 
+    rand = random.SystemRandom()
+
     def should_i(chance: float) -> bool:
         """
         Randomly decides if an action should be taken, based on the given
         probability.
         """
-        return random.random() < chance
+        return rand.random() < chance
 
-    CHANCE_OF_JUMP = 0.05  # Chance of breaking the chain
+    CHANCE_OF_JUMP = 0.02  # Chance of breaking the chain
     CHANCE_OF_LOOP = 0.90  # Chance of looping, if there's a loop option
-    sheep = random.choice([*flock])
+    sheep = rand.choice([*flock])
     yield sheep
     while True:
         nexts = [*flock.find_next_sheep(sheep)]
@@ -65,16 +67,16 @@ def flock_traversal() -> Iterator[Sheep]:
             # Pick a next item
             if should_i(CHANCE_OF_JUMP):
                 # Ignore the chain and pick something new at random
-                sheep = random.choice([*flock])
+                sheep = rand.choice([*flock])
             elif sheep in nexts and should_i(CHANCE_OF_LOOP):
                 # Just keep looping
                 pass
             else:
-                sheep = random.choice(nexts)
+                sheep = rand.choice(nexts)
         else:
             # Dead end, start over
             # Only jump to a loop, not a transitory
-            sheep = random.choice([s for s in flock if s.is_loop])
+            sheep = rand.choice([s for s in flock if s.is_loop])
         yield sheep
 
 
