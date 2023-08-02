@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 import mimetypes
 import random
@@ -8,16 +8,7 @@ import threading
 
 from flask import Flask, session, render_template
 
-
-@dataclass
-class Sheep:
-    path: Path
-    gen: int
-    ident: int
-    start: int
-    end: int
-    # All sheep seem to be 5 seconds?
-    length: int = 5
+from .flock import Sheep, Flock
 
 
 # FIXME: Take as argument
@@ -37,38 +28,25 @@ app.config.from_mapping(
 )
 app.config.from_prefixed_env()
 
-all_sheep: list[Sheep]
-next_sheep_index: dict[int, list[Sheep]]
+
+flock = Flock()
 
 
 def load_sheep():
-    global all_sheep, next_sheep_index
-    all_sheep = [
-        Sheep(p, *map(int, p.stem.split('=')))
-        for p in Path(app.static_folder).glob('*.mp4')
-    ]
-
-    next_sheep_index = {
-        s.ident: []
-        for s in all_sheep
-    }
-    # Technically, there's a race condition here, but if it gets hit,
-    # it'll just cause a chain break
-    for s in all_sheep:
-        if s.start in next_sheep_index:
-            next_sheep_index[s.start].append(s)
+    flock.discard_missing()
+    flock.update(Path(app.static_folder).glob('*.mp4'))
 
 
 load_sheep()
 
 
-def flock_traversal() -> Iterable[Sheep]:
+def flock_traversal() -> Iterator[Sheep]:
     """
     Random walks the sheep graph.
 
     Each loop is one step.
     """
-    global all_sheep, next_sheep_index
+    global flock
 
     def should_i(chance: float) -> bool:
         """
@@ -79,30 +57,28 @@ def flock_traversal() -> Iterable[Sheep]:
 
     CHANCE_OF_JUMP = 0.05  # Chance of breaking the chain
     CHANCE_OF_LOOP = 0.90  # Chance of looping, if there's a loop option
-    sheep = random.choice(all_sheep)
+    sheep = random.choice([*flock])
     yield sheep
     while True:
-        if sheep.ident not in next_sheep_index:
-            # Shouldn't happen
-            sheep = random.choice(all_sheep)
-        elif next_sheep_index[sheep.ident]:
+        nexts = [*flock.find_next_sheep(sheep)]
+        if nexts:
             # Pick a next item
-            nexts = next_sheep_index[sheep.ident]
             if should_i(CHANCE_OF_JUMP):
                 # Ignore the chain and pick something new at random
-                sheep = random.choice(all_sheep)
+                sheep = random.choice([*flock])
             elif sheep in nexts and should_i(CHANCE_OF_LOOP):
                 # Just keep looping
                 pass
             else:
-                sheep = random.choice(next_sheep_index[sheep.ident])
+                sheep = random.choice(nexts)
         else:
             # Dead end, start over
             # Only jump to a loop, not a transitory
-            sheep = random.choice([s for s in all_sheep if s.start == s.end])
+            sheep = random.choice([s for s in flock if s.is_loop])
         yield sheep
 
 
+# List of sheep in the order they were played
 sheep_list: list[tuple[int, Sheep]] = []
 
 
