@@ -24,7 +24,7 @@ class Sheep:
 
     @property
     def is_loop(self) -> bool:
-        return self.ident == self.start == self.end
+        return self.start == self.end
 
     @classmethod
     def from_path(cls, path: Path | str | PathLike) -> Self:
@@ -82,7 +82,7 @@ class Flock(MutableSet[Sheep]):
 
     def discard_missing(self):
         """
-        Scans the flock and removes sheep that no longer exist on the 
+        Scans the flock and removes sheep that no longer exist on the
         filesystem.
         """
         for sheep in self._sheep:
@@ -92,10 +92,16 @@ class Flock(MutableSet[Sheep]):
     def __getitem__(self, key: tuple[int, int]) -> Sheep:
         return self._idents[key]
 
-    def find_next_sheep(self, item: Sheepish) -> Iterable[Sheep]:
+    def find_next_sheep(self, item: Sheepish) -> Iterator[Sheep]:
         """
         Given a sheep, find the sheep that can follow it.
         """
         if isinstance(item, Sheep):
             item = item.gen, item.end
         yield from self._nexts[item]
+
+    def iter_loops(self) -> Iterator[Sheep]:
+        """
+        Return all sheep that loop on themselves.
+        """
+        yield from (s for s in self if s.is_loop)

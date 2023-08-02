@@ -67,7 +67,7 @@ def flock_traversal() -> Iterator[Sheep]:
             # Pick a next item
             if should_i(CHANCE_OF_JUMP):
                 # Ignore the chain and pick something new at random
-                sheep = rand.choice([*flock])
+                sheep = rand.choice([*flock.iter_loops()])
             elif sheep in nexts and should_i(CHANCE_OF_LOOP):
                 # Just keep looping
                 pass
@@ -76,7 +76,7 @@ def flock_traversal() -> Iterator[Sheep]:
         else:
             # Dead end, start over
             # Only jump to a loop, not a transitory
-            sheep = rand.choice([s for s in flock if s.is_loop])
+            sheep = rand.choice([*flock.iter_loops()])
         yield sheep
 
 
@@ -117,3 +117,15 @@ def get_next_chunk():
                         ),
         {'Content-Type': 'application/vnd.apple.mpegurl'},
     )
+
+
+@app.cli.command("graph")
+def graph():
+    """
+    Produce a graphviz graph of all the sheep in the current flock.
+    """
+    print("digraph {")
+    for sheep in flock:
+        print(f"\t{sheep.start} -> {sheep.end} [label={sheep.ident!r}]")
+
+    print("}")
